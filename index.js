@@ -63,6 +63,15 @@ async function run() {
       res.send(result);
     });
 
+    // get specific employer post job
+    app.get("/api/v1/employer/showPostedJob", async (req, res) => {
+      const email = req.query.email;
+      const query = { employer_email: email };
+      console.log(query);
+      const result = await categoriesCollection.find(query).toArray();
+      res.send(result);
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
