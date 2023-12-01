@@ -31,6 +31,18 @@ async function run() {
     await client.connect();
     await client.db("admin").command({ ping: 1 });
 
+    // collection
+    const categoriesCollection = client
+    .db("jub-hub")
+    .collection("categoriesCollection");
+ 
+  // job data post
+  app.post("/api/v1/employer/postJob", async (req, res) => {
+    const jobPost = req.body;
+    const result = await categoriesCollection.insertOne(jobPost);
+    res.send(result);
+  });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
