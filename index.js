@@ -55,6 +55,14 @@ async function run() {
       res.send(result);
     });
 
+    // get specific job detail
+    app.get("/api/v1/jobDetails/:job_id", async (req, res) => {
+      const id = req.params.job_id;
+      const query = { _id: new ObjectId(id) };
+      const result = await categoriesCollection.findOne(query);
+      res.send(result);
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
