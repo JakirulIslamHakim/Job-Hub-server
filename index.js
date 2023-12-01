@@ -8,8 +8,8 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(
   cors({
-    origin: "http://localhost:5173", 
-    credentials: true, 
+    origin: "http://localhost:5173",
+    credentials: true,
   })
 );
 app.use(express.json());
@@ -33,15 +33,27 @@ async function run() {
 
     // collection
     const categoriesCollection = client
-    .db("jub-hub")
-    .collection("categoriesCollection");
- 
-  // job data post
-  app.post("/api/v1/employer/postJob", async (req, res) => {
-    const jobPost = req.body;
-    const result = await categoriesCollection.insertOne(jobPost);
-    res.send(result);
-  });
+      .db("jub-hub")
+      .collection("categoriesCollection");
+
+    // job data post
+    app.post("/api/v1/employer/postJob", async (req, res) => {
+      const jobPost = req.body;
+      const result = await categoriesCollection.insertOne(jobPost);
+      res.send(result);
+    });
+
+    // get  category by job and all job
+    app.get("/api/v1/categories/:categoryName?", async (req, res) => {
+      const categoryName = req.params.categoryName;
+      // const query = { category: categoryName };
+      let query = {};
+      if (categoryName) {
+        query.category = categoryName;
+      }
+      const result = await categoriesCollection.find(query).toArray();
+      res.send(result);
+    });
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
