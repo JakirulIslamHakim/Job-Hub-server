@@ -73,12 +73,37 @@ async function run() {
       res.send(result);
     });
 
-    // employer delete post 
+    // employer specific delete job
     app.delete("/api/v1/deleteJob/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const deleteJob = await categoriesCollection.deleteOne(query);
       res.send(deleteJob);
+    });
+
+    // employer specific update job
+    app.put("/api/v1/updateJob/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateJobInfo = req.body;
+      const updated = {
+        $set: {
+          employer_email: updateJobInfo.employer_email,
+          job_title: updateJobInfo.job_title,
+          deadline: updateJobInfo.deadline,
+          category: updateJobInfo.category,
+          min_price: updateJobInfo.min_price,
+          max_price: updateJobInfo.max_price,
+          description: updateJobInfo.description,
+        },
+      };
+      const result = await categoriesCollection.updateOne(
+        filter,
+        updated,
+        options
+      );
+      res.send(result);
     });
 
     console.log(
