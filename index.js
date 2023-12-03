@@ -58,6 +58,7 @@ async function run() {
     // get specific job detail
     app.get("/api/v1/jobDetails/:job_id", async (req, res) => {
       const id = req.params.job_id;
+      // console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await categoriesCollection.findOne(query);
       res.send(result);
@@ -67,9 +68,17 @@ async function run() {
     app.get("/api/v1/employer/showPostedJob", async (req, res) => {
       const email = req.query.email;
       const query = { employer_email: email };
-      console.log(query);
+      // console.log(query, email);
       const result = await categoriesCollection.find(query).toArray();
       res.send(result);
+    });
+
+    // employer delete post 
+    app.delete("/api/v1/deleteJob/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const deleteJob = await categoriesCollection.deleteOne(query);
+      res.send(deleteJob);
     });
 
     console.log(
