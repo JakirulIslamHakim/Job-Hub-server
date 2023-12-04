@@ -35,6 +35,7 @@ async function run() {
     const categoriesCollection = client
       .db("jub-hub")
       .collection("categoriesCollection");
+    const biddingCollection = client.db("jub-hub").collection("biddingCollection");
 
     // job data post
     app.post("/api/v1/employer/postJob", async (req, res) => {
@@ -87,6 +88,7 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updateJobInfo = req.body;
+      console.log(updateJobInfo);
       const updated = {
         $set: {
           employer_email: updateJobInfo.employer_email,
@@ -103,6 +105,13 @@ async function run() {
         updated,
         options
       );
+      res.send(result);
+    });
+
+    // buyer bid
+    app.post("/api/v1/buyer/biddingJob", async (req, res) => {
+      const biddingInfo = req.body;
+      const result = await biddingCollection.insertOne(biddingInfo);
       res.send(result);
     });
 
