@@ -35,7 +35,9 @@ async function run() {
     const categoriesCollection = client
       .db("jub-hub")
       .collection("categoriesCollection");
-    const biddingCollection = client.db("jub-hub").collection("biddingCollection");
+    const biddingCollection = client
+      .db("jub-hub")
+      .collection("biddingCollection");
 
     // job data post
     app.post("/api/v1/employer/postJob", async (req, res) => {
@@ -108,10 +110,18 @@ async function run() {
       res.send(result);
     });
 
-    // buyer bid
+    // buyer bidding info send database
     app.post("/api/v1/buyer/biddingJob", async (req, res) => {
       const biddingInfo = req.body;
       const result = await biddingCollection.insertOne(biddingInfo);
+      res.send(result);
+    });
+
+    // find specific buyerBidding job
+    app.get("/api/v1/buyer/myBids", async (req, res) => {
+      const buyerEmail = req.query.email;
+      const query = { buyer_email: buyerEmail };
+      const result = await biddingCollection.find(query).toArray();
       res.send(result);
     });
 
