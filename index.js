@@ -124,6 +124,13 @@ async function run() {
       const result = await biddingCollection.find(query).toArray();
       res.send(result);
     });
+    // find specific employer bid request job
+    app.get("/api/v1/employer/bidRequests", async (req, res) => {
+      const employerEmail = req.query.email;
+      const query = { employer_email: employerEmail };
+      const result = await biddingCollection.find(query).toArray();
+      res.send(result);
+    });
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
