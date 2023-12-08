@@ -132,6 +132,21 @@ async function run() {
       res.send(result);
     });
 
+    // bidding job status update
+    app.patch("/api/v1/biddingJob/UpdateStatus/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateStatus = req.body;
+      // console.log(updateStatus.status);
+      const updated = {
+        $set: {
+          status: updateStatus.status,
+        },
+      };
+      const result =await biddingCollection.updateOne(filter, updated);
+      res.send(result);
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
