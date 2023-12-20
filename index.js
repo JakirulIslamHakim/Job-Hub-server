@@ -2,6 +2,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 const app = express();
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const port = process.env.PORT || 5000;
 
 // spT1IkIY7rTbOkzp job-hub
@@ -13,6 +15,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 
 const uri =
   "mongodb+srv://job-hub:spT1IkIY7rTbOkzp@cluster0.5prtsfh.mongodb.net/?retryWrites=true&w=majority";
@@ -26,6 +29,22 @@ const client = new MongoClient(uri, {
   },
 });
 
+// create middleware
+
+const verifyToken = async (req, res, next) => {
+  const token = req?.cookies?.token;
+  if (!token) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  jwt.verify(token, "secret", (err, decode) => {
+    if (err) {
+      return res.status(401).send({ message: "unauthorized access" });
+    } 
+    req.user = decode;
+  });
+  next();
+};
+
 async function run() {
   try {
     await client.connect();
@@ -38,28 +57,35 @@ async function run() {
     const biddingCollection = client
       .db("jub-hub")
       .collection("biddingCollection");
+    const feedbackCollection = client
+      .db("jub-hub")
+      .collection("feedbackCollection");
 
     // job data post
-    app.post("/api/v1/employer/postJob", async (req, res) => {
+    app.post("/api/v1/employer/postJob", verifyToken, async (req, res) => {
       const jobPost = req.body;
       const result = await categoriesCollection.insertOne(jobPost);
       res.send(result);
     });
 
-    // get  category by job and all job
-    app.get("/api/v1/categories/:categoryName?", async (req, res) => {
-      const categoryName = req.params.categoryName;
-      // const query = { category: categoryName };
-      let query = {};
-      if (categoryName) {
-        query.category = categoryName;
+    // get category by job and all job
+    app.get(
+      "/api/v1/categories/:categoryName?",
+      verifyToken,
+      async (req, res) => {
+        const categoryName = req.params.categoryName;
+        // const query = { category: categoryName };
+        let query = {};
+        if (categoryName) {
+          query.category = categoryName;
+        }
+        const result = await categoriesCollection.find(query).toArray();
+        res.send(result);
       }
-      const result = await categoriesCollection.find(query).toArray();
-      res.send(result);
-    });
+    );
 
     // get specific job detail
-    app.get("/api/v1/jobDetails/:job_id", async (req, res) => {
+    app.get("/api/v1/jobDetails/:job_id", verifyToken, async (req, res) => {
       const id = req.params.job_id;
       // console.log(id);
       const query = { _id: new ObjectId(id) };
@@ -68,7 +94,7 @@ async function run() {
     });
 
     // get specific employer post job
-    app.get("/api/v1/employer/showPostedJob", async (req, res) => {
+    app.get("/api/v1/employer/showPostedJob", verifyToken, async (req, res) => {
       const email = req.query.email;
       const query = { employer_email: email };
       // console.log(query, email);
@@ -77,7 +103,7 @@ async function run() {
     });
 
     // employer specific delete job
-    app.delete("/api/v1/deleteJob/:id", async (req, res) => {
+    app.delete("/api/v1/deleteJob/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const deleteJob = await categoriesCollection.deleteOne(query);
@@ -85,7 +111,7 @@ async function run() {
     });
 
     // employer specific update job
-    app.put("/api/v1/updateJob/:id", async (req, res) => {
+    app.put("/api/v1/updateJob/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
@@ -111,21 +137,21 @@ async function run() {
     });
 
     // buyer bidding info send database
-    app.post("/api/v1/buyer/biddingJob", async (req, res) => {
+    app.post("/api/v1/buyer/biddingJob", verifyToken, async (req, res) => {
       const biddingInfo = req.body;
       const result = await biddingCollection.insertOne(biddingInfo);
       res.send(result);
     });
 
     // find specific buyerBidding job
-    app.get("/api/v1/buyer/myBids", async (req, res) => {
+    app.get("/api/v1/buyer/myBids", verifyToken, async (req, res) => {
       const buyerEmail = req.query.email;
       const query = { buyer_email: buyerEmail };
       const result = await biddingCollection.find(query).toArray();
       res.send(result);
     });
     // find specific employer bid request job
-    app.get("/api/v1/employer/bidRequests", async (req, res) => {
+    app.get("/api/v1/employer/bidRequests", verifyToken, async (req, res) => {
       const employerEmail = req.query.email;
       const query = { employer_email: employerEmail };
       const result = await biddingCollection.find(query).toArray();
@@ -133,18 +159,46 @@ async function run() {
     });
 
     // bidding job status update
-    app.patch("/api/v1/biddingJob/UpdateStatus/:id", async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const updateStatus = req.body;
-      // console.log(updateStatus.status);
-      const updated = {
-        $set: {
-          status: updateStatus.status,
-        },
-      };
-      const result =await biddingCollection.updateOne(filter, updated);
+    app.patch(
+      "/api/v1/biddingJob/UpdateStatus/:id",
+      verifyToken,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateStatus = req.body;
+        // console.log(updateStatus.status);
+        const updated = {
+          $set: {
+            status: updateStatus.status,
+          },
+        };
+        const result = await biddingCollection.updateOne(filter, updated);
+        res.send(result);
+      }
+    );
+
+    // feedback api
+    app.get("/api/v1/feedback", async (req, res) => {
+      const result = await feedbackCollection.find().toArray();
       res.send(result);
+    });
+
+    // create access  token
+    app.post("/api/v1/auth/accessToken", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, "secret", { expiresIn: "1h" });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          maxAge: 900000,
+          secure: true,
+          sameSite: "none",
+        })
+        .send({ success: true });
+    });
+
+    app.get("/api/v1/auth/logout", (req, res) => {
+      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
     });
 
     console.log(
