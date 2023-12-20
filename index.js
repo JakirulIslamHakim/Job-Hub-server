@@ -39,7 +39,7 @@ const verifyToken = async (req, res, next) => {
   jwt.verify(token, "secret", (err, decode) => {
     if (err) {
       return res.status(401).send({ message: "unauthorized access" });
-    } 
+    }  
     req.user = decode;
   });
   next();
