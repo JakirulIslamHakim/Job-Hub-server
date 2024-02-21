@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "https://job-hub-6e265.web.app"],
     credentials: true,
   })
 );
@@ -39,16 +39,16 @@ const verifyToken = async (req, res, next) => {
   jwt.verify(token, "secret", (err, decode) => {
     if (err) {
       return res.status(401).send({ message: "unauthorized access" });
-    }  
+    }
     req.user = decode;
+    next();
   });
-  next();
 };
 
 async function run() {
   try {
-    await client.connect();
-    await client.db("admin").command({ ping: 1 });
+    // await client.connect();
+    // await client.db("admin").command({ ping: 1 });
 
     // collection
     const categoriesCollection = client
@@ -69,20 +69,19 @@ async function run() {
     });
 
     // get category by job and all job
-    app.get(
-      "/api/v1/categories/:categoryName?",
-      verifyToken,
-      async (req, res) => {
-        const categoryName = req.params.categoryName;
-        // const query = { category: categoryName };
-        let query = {};
-        if (categoryName) {
-          query.category = categoryName;
-        }
-        const result = await categoriesCollection.find(query).toArray();
-        res.send(result);
+    app.get("/api/v1/categories/:categoryName?", async (req, res) => {
+      const categoryName = req.params.categoryName;
+      // const query = { category: categoryName };
+      let query = {};
+      if (categoryName) {
+        query.category = categoryName;
       }
-    );
+      const result = await categoriesCollection.find(query).toArray();
+      res.send(result);
+
+      const totalJob = await categoriesCollection.estimatedDocumentCount();
+      // console.log(totalJob);
+    });
 
     // get specific job detail
     app.get("/api/v1/jobDetails/:job_id", verifyToken, async (req, res) => {
@@ -96,10 +95,13 @@ async function run() {
     // get specific employer post job
     app.get("/api/v1/employer/showPostedJob", verifyToken, async (req, res) => {
       const email = req.query.email;
+      const tokenUser = req.user?.email;
+      if (tokenUser !== email) {
+        return res.status(403).send({ message: "forbidden" });
+      }
       const query = { employer_email: email };
-      // console.log(query, email);
       const result = await categoriesCollection.find(query).toArray();
-      res.send(result);
+      res.send(result); 
     });
 
     // employer specific delete job
@@ -146,6 +148,10 @@ async function run() {
     // find specific buyerBidding job
     app.get("/api/v1/buyer/myBids", verifyToken, async (req, res) => {
       const buyerEmail = req.query.email;
+      const tokenUser = req.user?.email;
+      if (tokenUser !== buyerEmail) {
+        return res.status(403).send({ message: "forbidden" });
+      }
       const query = { buyer_email: buyerEmail };
       const result = await biddingCollection.find(query).toArray();
       res.send(result);
@@ -153,6 +159,10 @@ async function run() {
     // find specific employer bid request job
     app.get("/api/v1/employer/bidRequests", verifyToken, async (req, res) => {
       const employerEmail = req.query.email;
+      const tokenUser = req.user?.email;
+      if (tokenUser !== employerEmail) {
+        return res.status(403).send({ message: "forbidden" });
+      }
       const query = { employer_email: employerEmail };
       const result = await biddingCollection.find(query).toArray();
       res.send(result);
